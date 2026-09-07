@@ -1,0 +1,176 @@
+#!/bin/bash
+
+if [ "$1" = "-d" ] 
+   then
+   pkill -f consolidar.sh
+   rm -r "$HOME/EPNro1"
+        exit
+fi
+
+if [ -n "$FILENAME" ]
+  then
+mensaje=""
+while [ "$opcion" != "7" ]
+do
+    echo " "
+    echo "=========================================="
+    echo " PROYECTO BASH "
+    echo "=========================================="
+    echo "1) Crear entorno"
+    echo "2) Correr proceso"
+    echo "3) Listado ordenado por nÃºmero de padrÃ³n"
+    echo "4) Las 10 notas mÃ¡s altas"
+    echo "5) Buscar alumno por padrÃ³n"
+    echo "6) Mostrar log de procesados"
+    echo "7) Salir"
+    echo "=========================================="
+    echo -n "OpciÃ³n elegida: "
+    read opcion
+
+
+   case "$opcion" in
+1)
+        mkdir -p "$HOME/EPNro1"
+        mkdir -p "$HOME/EPNro1/Entrada"
+        mkdir -p "$HOME/EPNro1/Salida"
+        mkdir -p "$HOME/EPNro1/procesado"
+        touch "$HOME/EPNro1/Salida/$FILENAME.txt"
+        mensaje="Entorno generado correctamente"
+clear
+        ;;
+        
+2)
+if pgrep -f consolidar.sh > /dev/null
+  then
+    clear
+    mensaje="ya hay un proceso corriendo en este momento, si quieres cerrarlos ejecuta la opcion 7"
+  else
+        if [ -d "$HOME/EPNro1" ]
+        then
+             touch "$HOME/EPNro1/consolidar.sh"
+             cat > "$HOME/EPNro1/consolidar.sh" << finaliza
+
+#!/bin/bash
+while [ -d "$HOME/EPNro1" ]
+do
+for archivo in "$HOME/EPNro1/Entrada/"*.txt
+do
+  if [ -f "\$archivo" ]
+  then
+      cat "\$archivo" >> "$HOME/EPNro1/Salida/$FILENAME.txt"
+      mv "\$archivo" "$HOME/EPNro1/procesado"
+      echo "\$(date '+%d/%m/%Y %H:%M:%S') - Procesado archivo \$(basename "\$archivo")" >> "$HOME/EPNro1/procesado.log"
+  fi
+done
+
+sleep 5
+done
+finaliza
+             bash "$HOME/EPNro1/consolidar.sh" &
+             PID=$! 
+             mensaje="El proceso esta corriendo"
+        clear
+        else
+             clear
+             mensaje="Primero cree el entorno"
+        fi
+fi
+        ;;
+        
+3)
+             if [ -f "$HOME/EPNro1/Salida/$FILENAME.txt" ]
+             then
+             clear
+             sort -n -t' ' -k1 "$HOME/EPNro1/Salida/$FILENAME.txt"
+             mensaje=""
+             else
+               if [ -d "$HOME/EPNro1" ]
+               then 
+                 mensaje="No se encuentra el archivo necesario en la carpeta Salida" 
+               else
+                 mensaje="No existe la carpeta EPNro1, generala con la opciÃ³n 1"
+               fi
+             fi
+        ;;
+4)
+             if [ -f "$HOME/EPNro1/Salida/$FILENAME.txt" ]
+             then
+             sort -nr -t' ' -k5 "$HOME/EPNro1/Salida/$FILENAME.txt" | head
+             else
+               if [ -d "$HOME/EPNro1" ]
+               then 
+                 mensaje="No se encuentra el archivo necesario en la carpeta Salida" 
+               else
+                 mensaje="No existe la carpeta EPNro1, generala con la opciÃ³n 1"
+               fi
+             fi
+        ;;
+5)
+if [ -f "$HOME/EPNro1/Salida/$FILENAME.txt" ]
+  then
+        clear
+        echo -n "Ingrese el padron que esta buscando: "
+        read padron
+        grep  "^$padron " "$HOME/EPNro1/Salida/$FILENAME.txt"
+  else
+    if [ -d "$HOME/EPNro1" ]
+             then 
+                 mensaje="No se encuentra el archivo necesario en la carpeta Salida" 
+             else
+                 mensaje="No existe la carpeta EPNro1, generala con la opciÃ³n 1"
+    fi
+fi
+        ;;
+6)
+if [ -f "$HOME/EPNro1/procesado.log" ]
+  then 
+        clear
+        cat "$HOME/EPNro1/procesado.log"
+  else
+        clear
+        mensaje="no se encontro el archivo"
+fi
+        ;;
+7)
+
+Procesos=$(ps aux | grep consolidar.sh | grep -v grep)
+
+if [ -n "$PID" ] || [ -n "$Procesos" ] 
+then
+        if [ -n "$Procesos" ]
+           then
+             respuesta=""L
+             while [ "$respuesta" != "Y" ] && [ "$respuesta" != "N" ]
+             do
+               echo "Existen procesos antiguos que siguen corriendo, los quiere cerrar?"
+               echo " SI(Y) NO(N) "
+               read respuesta
+               respuesta="${respuesta^^}"
+              case $respuesta in
+               Y)
+                  pkill -f consolidar.sh
+                  clear 
+                  ;; 
+               N)
+                  clear
+                  ;;
+               *)
+                clear
+                  echo "No ingreso una opcion correcta"
+                  ;;
+               esac
+              done     
+        fi  
+
+fi
+        clear
+        ;;        
+*)
+clear
+        echo "eligio mal"
+        ;;
+esac
+done
+  else
+    echo "No aÃ±adio una variable de entorno para FILENAME"
+fi  
